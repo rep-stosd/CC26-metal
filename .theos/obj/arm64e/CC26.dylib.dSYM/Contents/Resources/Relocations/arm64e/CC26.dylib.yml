@@ -1,0 +1,32 @@
+---
+triple:          'arm64e-apple-darwin'
+binary-path:     '/Users/max/CC18/.theos/obj/arm64e/CC26.dylib'
+relocations:
+  - { offset: 0x1E, size: 0x8, addend: 0x0, symName: __Z13calculateArea6CGRect, symObjAddr: 0x0, symBinAddr: 0x4000, symSize: 0x8 }
+  - { offset: 0x4A, size: 0x8, addend: 0x0, symName: '__ZL85_logos_orig$_ungrouped$MTMaterialLayer$_configureIfNecessaryWithSettingsInterpolator$', symObjAddr: 0x10CE0, symBinAddr: 0xC290, symSize: 0x0 }
+  - { offset: 0x6AC, size: 0x8, addend: 0x0, symName: '__ZL54_logos_orig$_ungrouped$MTMaterialLayer$layoutSublayers', symObjAddr: 0x10CE8, symBinAddr: 0xC298, symSize: 0x0 }
+  - { offset: 0x6D6, size: 0x8, addend: 0x0, symName: '__ZL75_logos_orig$_ungrouped$CCUIContentModuleContentContainerView$layoutSubviews', symObjAddr: 0x10CF0, symBinAddr: 0xC2A0, symSize: 0x0 }
+  - { offset: 0x9D8, size: 0x8, addend: 0x0, symName: '__ZL90_logos_orig$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$', symObjAddr: 0x10CF8, symBinAddr: 0xC2A8, symSize: 0x0 }
+  - { offset: 0x19BD, size: 0x8, addend: 0x0, symName: __Z13calculateArea6CGRect, symObjAddr: 0x0, symBinAddr: 0x4000, symSize: 0x8 }
+  - { offset: 0x19EA, size: 0x8, addend: 0x0, symName: __Z15calculateAspect6CGRect, symObjAddr: 0x8, symBinAddr: 0x4008, symSize: 0x1C }
+  - { offset: 0x1A17, size: 0x8, addend: 0x0, symName: __Z20roundedToTwoDecimalsd, symObjAddr: 0x24, symBinAddr: 0x4024, symSize: 0x18 }
+  - { offset: 0x1AAC, size: 0x8, addend: 0x0, symName: __Z16calculatedRadius6CGRectd, symObjAddr: 0x3C, symBinAddr: 0x403C, symSize: 0x214 }
+  - { offset: 0x1B8D, size: 0x8, addend: 0x0, symName: __Z15getModuleRadiusP6UIView, symObjAddr: 0x250, symBinAddr: 0x4250, symSize: 0xC8 }
+  - { offset: 0x1BD8, size: 0x8, addend: 0x0, symName: __Z18findSubviewOfClassP6UIViewP10objc_class, symObjAddr: 0x318, symBinAddr: 0x4318, symSize: 0x1A4 }
+  - { offset: 0x1C5A, size: 0x8, addend: 0x0, symName: __Z17applyPrismToLayerP7CALayer, symObjAddr: 0x4BC, symBinAddr: 0x44BC, symSize: 0x3B4 }
+  - { offset: 0x1CA7, size: 0x8, addend: 0x0, symName: __ZL15_logosLocalInitv, symObjAddr: 0x870, symBinAddr: 0x4870, symSize: 0xE4 }
+  - { offset: 0x1D58, size: 0x8, addend: 0x0, symName: '__ZL87_logos_method$_ungrouped$MTMaterialLayer$_configureIfNecessaryWithSettingsInterpolator$P15MTMaterialLayerP13objc_selectorP30MTMaterialSettingsInterpolator', symObjAddr: 0x954, symBinAddr: 0x4954, symSize: 0x278 }
+  - { offset: 0x1D90, size: 0x8, addend: 0x0, symName: '__ZL87_logos_method$_ungrouped$MTMaterialLayer$_configureIfNecessaryWithSettingsInterpolator$P15MTMaterialLayerP13objc_selectorP30MTMaterialSettingsInterpolator', symObjAddr: 0x954, symBinAddr: 0x4954, symSize: 0x278 }
+  - { offset: 0x1E13, size: 0x8, addend: 0x0, symName: '__ZL56_logos_method$_ungrouped$MTMaterialLayer$layoutSublayersP15MTMaterialLayerP13objc_selector', symObjAddr: 0xBCC, symBinAddr: 0x4BCC, symSize: 0x160 }
+  - { offset: 0x1F1D, size: 0x8, addend: 0x0, symName: '__ZL77_logos_method$_ungrouped$CCUIContentModuleContentContainerView$layoutSubviewsP37CCUIContentModuleContentContainerViewP13objc_selector', symObjAddr: 0xD2C, symBinAddr: 0x4D2C, symSize: 0x5D8 }
+  - { offset: 0x20FF, size: 0x8, addend: 0x0, symName: '__ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl', symObjAddr: 0x1304, symBinAddr: 0x5304, symSize: 0x984 }
+  - { offset: 0x2354, size: 0x8, addend: 0x0, symName: '____ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl_block_invoke', symObjAddr: 0x1C88, symBinAddr: 0x5C88, symSize: 0x6C }
+  - { offset: 0x23C1, size: 0x8, addend: 0x0, symName: '____ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl_block_invoke_2', symObjAddr: 0x1CF4, symBinAddr: 0x5CF4, symSize: 0x68 }
+  - { offset: 0x2412, size: 0x8, addend: 0x0, symName: '____ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl_block_invoke_3', symObjAddr: 0x1D5C, symBinAddr: 0x5D5C, symSize: 0x78 }
+  - { offset: 0x2463, size: 0x8, addend: 0x0, symName: '____ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl_block_invoke_4', symObjAddr: 0x1DD4, symBinAddr: 0x5DD4, symSize: 0x78 }
+  - { offset: 0x24B4, size: 0x8, addend: 0x0, symName: '____ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl_block_invoke_5', symObjAddr: 0x1E4C, symBinAddr: 0x5E4C, symSize: 0x60 }
+  - { offset: 0x2505, size: 0x8, addend: 0x0, symName: '____ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl_block_invoke_6', symObjAddr: 0x1EAC, symBinAddr: 0x5EAC, symSize: 0x80 }
+  - { offset: 0x252C, size: 0x8, addend: 0x0, symName: ___copy_helper_block_ea8_32s40s, symObjAddr: 0x1F2C, symBinAddr: 0x5F2C, symSize: 0x3C }
+  - { offset: 0x2552, size: 0x8, addend: 0x0, symName: ___destroy_helper_block_ea8_32s40s, symObjAddr: 0x1F68, symBinAddr: 0x5F68, symSize: 0x3C }
+  - { offset: 0x256F, size: 0x8, addend: 0x0, symName: '____ZL92_logos_method$_ungrouped$CCUIModularControlCenterOverlayViewController$setPresentationState$P45CCUIModularControlCenterOverlayViewControllerP13objc_selectorl_block_invoke.139', symObjAddr: 0x1FA4, symBinAddr: 0x5FA4, symSize: 0xA8 }
+...
