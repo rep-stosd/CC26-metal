@@ -1,6 +1,7 @@
 #import <UIKit/UIKit.h>
 #import "Headers/NSTask.h"
 
+
 @interface MTMaterialLayer : CALayer
 @property (nonatomic, copy, readwrite) NSString *recipeName;
 @property (atomic, assign, readonly) CGRect visibleRect;
@@ -10,6 +11,12 @@
 @end
 
 @interface CCUISteppedSliderView : UIControl
+@end
+
+@interface MRUNowPlayingView : UIView
+@end
+
+@interface MRUNowPlayingTransportControlsView : UIView
 @end
 
 @interface CCUIModularControlCenterViewController : UIViewController
@@ -128,34 +135,49 @@ UIView *findSubviewOfClass(UIView *view, Class cls) {
     return nil;
 }
 
+CGFloat calculatedRadiusForLayer(CALayer *layer, CGFloat fallbackRadius) {
+    CGRect rect = layer.bounds;
+    if (CGRectIsEmpty(rect)) {
+        rect = layer.frame;
+    }
+    return calculatedRadius(rect, fallbackRadius);
+}
+
+
 
 #pragma mark - iOS 26 border
 
 void applyPrismToLayer(CALayer *layer) {
+    CAGradientLayer *gradient = nil;
+
     for (CALayer *sublayer in layer.sublayers) {
-        if ([sublayer.name isEqualToString:@"iOS26PrismBorder"]) {
-            sublayer.frame = layer.bounds;
-            return;
+        if ([sublayer.name isEqualToString:@"iOS26PrismBorder"] && [sublayer isKindOfClass:[CAGradientLayer class]]) {
+            gradient = (CAGradientLayer *)sublayer;
+            break;
         }
     }
-    
-    CAGradientLayer *gradient = [CAGradientLayer layer];
-    gradient.name = @"iOS26PrismBorder";
-    gradient.colors = @[
-        (id)[[UIColor colorWithRed:0.8 green:0.75 blue:0.95 alpha:0.30] CGColor],
-        (id)[[UIColor colorWithWhite:1.0 alpha:0.08] CGColor],
-        (id)[[UIColor colorWithRed:0.9 green:0.85 blue:1.0 alpha:0.20] CGColor]
-    ];
-    gradient.locations = @[@0.0, @0.5, @1.0];
-    gradient.startPoint = CGPointMake(0.0, 0.0);
-    gradient.endPoint = CGPointMake(1.0, 1.0);
-    gradient.cornerRadius = layer.cornerRadius;
 
-    gradient.contentsScale = [UIScreen mainScreen].scale;
+    if (!gradient) {
+        gradient = [CAGradientLayer layer];
+        gradient.name = @"iOS26PrismBorder";
+        gradient.colors = @[
+            (id)[[UIColor colorWithRed:0.8 green:0.75 blue:0.95 alpha:0.30] CGColor],
+            (id)[[UIColor colorWithWhite:1.0 alpha:0.08] CGColor],
+            (id)[[UIColor colorWithRed:0.9 green:0.85 blue:1.0 alpha:0.20] CGColor]
+        ];
+        gradient.locations = @[@0.0, @0.5, @1.0];
+        gradient.startPoint = CGPointMake(0.0, 0.0);
+        gradient.endPoint = CGPointMake(1.0, 1.0);
+        gradient.contentsScale = [UIScreen mainScreen].scale;
+
+        [layer insertSublayer:gradient atIndex:0];
+    }
 
     gradient.frame = layer.bounds;
-    [layer insertSublayer:gradient atIndex:0];
+    gradient.masksToBounds = YES;
+    gradient.cornerRadius = layer.cornerRadius;
 }
+
 
 
 %hook MTMaterialLayer
@@ -181,24 +203,110 @@ void applyPrismToLayer(CALayer *layer) {
         [base setValue:@(2.3) forKey:@"blurRadius"];
     }
 }
+
 - (void)layoutSublayers {
     %orig;
-
     NSArray<NSString *> *titles = @[@"modules", @"moduleFill.highlight.generatedRecipe"];
     if (![titles containsObject:self.recipeName]) return;
-
-    CGFloat radius = calculatedRadius(self.visibleRect, self.cornerRadius);
-    
-        self.cornerRadius = radius; 
-        self.borderColor = [UIColor colorWithWhite:1.0 alpha:0.15].CGColor;
-        self.borderWidth = 2.0;
-        self.masksToBounds = YES;
-        self.continuousCorners = YES;
-    
         applyPrismToLayer(self);
 }
 
 %end
+
+%hook MRUNowPlayingView
+
+- (void)layoutSubviews {
+    %orig;
+
+    // Verhindere Änderungen außerhalb des Control Centers
+    BOOL isInsideCC = NO;
+    UIView *v = self;
+    while (v.superview) {
+        if ([v isKindOfClass:%c(CCUIContentModuleContentContainerView)]) {
+            isInsideCC = YES;
+            break;
+        }
+        v = v.superview;
+    }
+    if (!isInsideCC) return;
+
+    NSInteger layout = ((NSNumber *)[self valueForKey:@"_layout"]).integerValue;
+    if (layout == 2) return;
+
+    UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
+    if (!artworkView) return;
+
+    artworkView.frame = CGRectMake(16, 12, 50, 50);
+    artworkView.alpha = 1.0;
+    artworkView.layer.cornerRadius = 15;
+    artworkView.layer.masksToBounds = YES;
+
+    UIView *headerView = findSubviewOfClass(self, %c(MRUNowPlayingHeaderView));
+    if (!headerView) return;
+
+    CGFloat padding = 1.0;
+    CGFloat headerX = padding;
+    CGFloat headerY = CGRectGetMaxY(artworkView.frame) + 8;
+    CGFloat headerWidth = self.bounds.size.width - 2 * padding;
+    CGFloat headerHeight = 40;
+
+    headerView.frame = CGRectMake(headerX, headerY, headerWidth, headerHeight);
+
+    [headerView setValue:@(NSTextAlignmentLeft) forKey:@"textAlignment"];
+
+    // Transport Controls nach unten verschieben
+    UIView *transportControlsView = findSubviewOfClass(self, %c(MRUNowPlayingTransportControlsView));
+    if (transportControlsView) {
+        CGFloat controlsWidth = transportControlsView.frame.size.width;
+        CGFloat controlsHeight = transportControlsView.frame.size.height;
+
+        CGFloat x = (self.bounds.size.width - controlsWidth) / 2.0;
+        CGFloat y = self.bounds.size.height - controlsHeight;
+
+        transportControlsView.frame = CGRectMake(x, y, controlsWidth, controlsHeight);
+    }
+}
+
+%end
+
+%hook MRUNowPlayingTransportControlsView
+
+- (void)layoutSubviews {
+    %orig;
+
+    // Kontrolle: Ist das Control Center aktiv?
+    BOOL isInsideCC = NO;
+    UIView *v = self;
+    while (v.superview) {
+        if ([v isKindOfClass:%c(CCUIContentModuleContentContainerView)]) {
+            isInsideCC = YES;
+            break;
+        }
+        v = v.superview;
+    }
+    if (!isInsideCC) return;
+
+    // Optional: Kompaktmodus prüfen (Layout 0)
+    MRUNowPlayingView *npView = (MRUNowPlayingView *)self.superview;
+    NSInteger layout = [[npView valueForKey:@"_layout"] integerValue];
+    if (layout == 2) return;
+
+    // Buttons enger setzen
+    UIButton *leftButton = [self valueForKey:@"leftButton"];
+    UIButton *rightButton = [self valueForKey:@"rightButton"];
+    UIButton *centerButton = [self valueForKey:@"centerButton"];
+
+    if (leftButton && rightButton && centerButton) {
+        CGPoint center = centerButton.center;
+        CGFloat spacing = 40.0;
+
+        leftButton.center = CGPointMake(center.x - spacing, center.y);
+        rightButton.center = CGPointMake(center.x + spacing, center.y);
+    }
+}
+
+%end
+
 
 
 %hook CCUIContentModuleContentContainerView
@@ -209,15 +317,16 @@ void applyPrismToLayer(CALayer *layer) {
     self.clipsToBounds = YES;
     self.layer.cornerRadius = radius;
     self.layer.continuousCorners = YES; // Smooth corner into straight edges!!
-
+    self.layer.borderWidth = 2.0;
+    self.layer.borderColor = [UIColor colorWithWhite:0.5 alpha:0.3].CGColor;
     if (self.subviews.count == 1) {
         UIView *subview1 = [self subviews][0];
         if ([[subview1 subviews] count] >= 1) {
             UIView *subview2 = [subview1 subviews][0];
-            if ([subview2 isKindOfClass:%c(CCUIContinuousSliderView)]) {
-                [subview2 setClipsToBounds:NO];
+            if ([subview2 isKindOfClass:%c(CCUIContinuousSliderView)]) { // Volume Slider
+                [subview2 setClipsToBounds:YES];
                 [[subview2 layer] setCornerRadius:radius];
-                subview2.layer.continuousCorners = YES;
+                subview2.layer.continuousCorners = YES;            
             } else {
                 if ([[subview2 subviews] count] > 0) {
                     UIView *subview3 = [subview2 subviews][0];
@@ -239,39 +348,11 @@ void applyPrismToLayer(CALayer *layer) {
         if ([subview isKindOfClass: %c(CCUIContinuousSliderView)]) {
             [[subview layer] setCornerRadius:radius];
             subview.layer.continuousCorners = YES;
-            subview.clipsToBounds = YES;
+            subview.clipsToBounds = NO;
         }
     }
 }
-/*
-- (void)layoutSubviews {
-    %orig;
 
-    BOOL opened = MSHookIvar<BOOL>(self, "_expanded");
-    CGFloat radius = opened ? 65 : getModuleRadius(self);
-
-    self.clipsToBounds = YES;
-    self.layer.cornerRadius = radius;
-    self.layer.continuousCorners = YES;
-
-
-    // Rekursive Suche nach CCUIContinuousSliderView
-    UIView *slider = findSubviewOfClass(self, %c(CCUIContinuousSliderView));
-    if (slider) {
-        slider.clipsToBounds = YES;
-        slider.layer.cornerRadius = radius;
-        slider.layer.continuousCorners = YES;
-    }
-
-    // Optional: Auch MTMaterialView (z. B. modulfüllende Layer) abrunden
-    UIView *materialView = findSubviewOfClass(self, %c(MTMaterialView));
-    if (materialView) {
-        materialView.layer.cornerRadius = radius;
-        materialView.layer.continuousCorners = YES;
-        materialView.clipsToBounds = YES;
-        materialView.layer.masksToBounds = YES; // Sicherstellen, dass die Ecken wirklich abgerundet sind
-    }
-}*/
 %end
 
 %hook CCUIModularControlCenterOverlayViewController
