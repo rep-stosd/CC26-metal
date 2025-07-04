@@ -1,5 +1,7 @@
 #import <UIKit/UIKit.h>
 #import "Headers/NSTask.h"
+#include <spawn.h>
+
 
 
 @interface MTMaterialLayer : CALayer
@@ -143,6 +145,15 @@ CGFloat calculatedRadiusForLayer(CALayer *layer, CGFloat fallbackRadius) {
     return calculatedRadius(rect, fallbackRadius);
 }
 
+NSArray *findAllSubviewsOfClass(UIView *view, Class cls) {
+    NSMutableArray *result = [NSMutableArray array];
+    for (UIView *sub in view.subviews) {
+        if ([sub isKindOfClass:cls]) [result addObject:sub];
+        [result addObjectsFromArray:findAllSubviewsOfClass(sub, cls)];
+    }
+    return result;
+}
+
 
 
 #pragma mark - iOS 26 border
@@ -215,6 +226,20 @@ void applyPrismToLayer(CALayer *layer) {
 
 %hook MRUNowPlayingView
 
+void adjustLabelFontsInView(UIView *view) {
+    for (UIView *subview in view.subviews) {
+        if ([subview isKindOfClass:[UILabel class]]) {
+            UILabel *label = (UILabel *)subview;
+            label.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightRegular];
+            label.adjustsFontSizeToFitWidth = YES;
+            label.minimumScaleFactor = 0.8;
+        } else {
+            adjustLabelFontsInView(subview); // 🔁 Rekursiv weiter
+        }
+    }
+}
+
+
 - (void)layoutSubviews {
     %orig;
 
@@ -233,6 +258,7 @@ void applyPrismToLayer(CALayer *layer) {
     NSInteger layout = ((NSNumber *)[self valueForKey:@"_layout"]).integerValue;
     if (layout == 2) return;
 
+    // 🎨 Artwork-View stylen
     UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
     if (!artworkView) return;
 
@@ -241,27 +267,28 @@ void applyPrismToLayer(CALayer *layer) {
     artworkView.layer.cornerRadius = 15;
     artworkView.layer.masksToBounds = YES;
 
+    // 🏷️ Header (Songtitel/Interpret)
     UIView *headerView = findSubviewOfClass(self, %c(MRUNowPlayingHeaderView));
     if (!headerView) return;
 
     CGFloat padding = 1.0;
     CGFloat headerX = padding;
-    CGFloat headerY = CGRectGetMaxY(artworkView.frame) + 8;
+    CGFloat headerY = CGRectGetMaxY(artworkView.frame) + 6;
     CGFloat headerWidth = self.bounds.size.width - 2 * padding;
     CGFloat headerHeight = 40;
 
     headerView.frame = CGRectMake(headerX, headerY, headerWidth, headerHeight);
-
     [headerView setValue:@(NSTextAlignmentLeft) forKey:@"textAlignment"];
+        adjustLabelFontsInView(headerView);    
 
-    // Transport Controls nach unten verschieben
+    // 🎛️ Transport Controls verschieben
     UIView *transportControlsView = findSubviewOfClass(self, %c(MRUNowPlayingTransportControlsView));
     if (transportControlsView) {
         CGFloat controlsWidth = transportControlsView.frame.size.width;
         CGFloat controlsHeight = transportControlsView.frame.size.height;
 
         CGFloat x = (self.bounds.size.width - controlsWidth) / 2.0;
-        CGFloat y = self.bounds.size.height - controlsHeight;
+        CGFloat y = self.bounds.size.height - controlsHeight - 8.0;
 
         transportControlsView.frame = CGRectMake(x, y, controlsWidth, controlsHeight);
     }
@@ -295,6 +322,7 @@ void applyPrismToLayer(CALayer *layer) {
     UIButton *leftButton = [self valueForKey:@"leftButton"];
     UIButton *rightButton = [self valueForKey:@"rightButton"];
     UIButton *centerButton = [self valueForKey:@"centerButton"];
+    UIButton *routingButton = [self valueForKey:@"routingButton"]; // AirPlay-Button
 
     if (leftButton && rightButton && centerButton) {
         CGPoint center = centerButton.center;
@@ -302,6 +330,12 @@ void applyPrismToLayer(CALayer *layer) {
 
         leftButton.center = CGPointMake(center.x - spacing, center.y);
         rightButton.center = CGPointMake(center.x + spacing, center.y);
+    }
+    if (routingButton) {
+        routingButton.alpha = 1.0;
+        routingButton.layer.cornerRadius = 6;
+        routingButton.layer.masksToBounds = YES;
+        routingButton.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.3];
     }
 }
 
@@ -406,45 +440,44 @@ void applyPrismToLayer(CALayer *layer) {
         power.frame = CGRectMake(view.bounds.size.width - safeRight - buttonSize , yOffset - 10, buttonSize, buttonSize);
 
         if (@available(iOS 14.0, *)) {
-            UIAction *respringAction = [UIAction actionWithTitle:@"Respring"
-                                                           image:[UIImage systemImageNamed:@"arrow.clockwise.circle"]
-                                                      identifier:nil
-                                                         handler:^(__kindof UIAction *action) {
-                NSTask *task = [[NSTask alloc] init];
-                [task setLaunchPath:@"/usr/bin/sbreload"];
-                [task launch];
-            }];
+    UIAction *respringAction = [UIAction actionWithTitle:@"Respring"
+                                                   image:[UIImage systemImageNamed:@"arrow.clockwise.circle"]
+                                              identifier:nil
+                                                 handler:^(__kindof UIAction *action) {
+        pid_t pid;
+        const char *args[] = {"sbreload", NULL};
+        posix_spawn(&pid, "/usr/bin/sbreload", NULL, NULL, (char *const *)args, NULL);
+    }];
 
-            UIAction *uicacheAction = [UIAction actionWithTitle:@"UICache"
-                                                          image:[UIImage systemImageNamed:@"paintbrush.fill"]
-                                                     identifier:nil
-                                                        handler:^(__kindof UIAction *action) {
-                NSTask *task = [[NSTask alloc] init];
-                [task setLaunchPath:@"/usr/bin/uicache"];
-                [task setArguments:@[@"-a"]];
-                [task launch];
-            }];
+    UIAction *uicacheAction = [UIAction actionWithTitle:@"UICache"
+                                                  image:[UIImage systemImageNamed:@"paintbrush.fill"]
+                                             identifier:nil
+                                                handler:^(__kindof UIAction *action) {
+        pid_t pid;
+        const char *args[] = {"uicache", "-a", NULL};
+        posix_spawn(&pid, "/usr/bin/uicache", NULL, NULL, (char *const *)args, NULL);
+    }];
 
-            UIAction *userspaceAction = [UIAction actionWithTitle:@"Userspace Reboot"
-                                                            image:[UIImage systemImageNamed:@"bolt.fill"]
-                                                       identifier:nil
-                                                          handler:^(__kindof UIAction *action) {
-                NSTask *task = [[NSTask alloc] init];
-                [task setLaunchPath:@"/bin/launchctl"];
-                [task setArguments:@[@"reboot", @"userspace"]];
-                [task launch];
-            }];
+    UIAction *userspaceAction = [UIAction actionWithTitle:@"Userspace Reboot"
+                                                    image:[UIImage systemImageNamed:@"bolt.fill"]
+                                               identifier:nil
+                                                  handler:^(__kindof UIAction *action) {
+        pid_t pid;
+        const char *args[] = {"launchctl", "reboot", "userspace", NULL};
+        posix_spawn(&pid, "/bin/launchctl", NULL, NULL, (char *const *)args, NULL);
+    }];
 
-            UIMenu *menu = [UIMenu menuWithTitle:@"Choose Action"
-                                          children:@[respringAction, uicacheAction, userspaceAction]];
-            [power setMenu:menu];
-            [power setShowsMenuAsPrimaryAction:YES];
+    UIMenu *menu = [UIMenu menuWithTitle:@"Choose Action"
+                                 children:@[respringAction, uicacheAction, userspaceAction]];
+    [power setMenu:menu];
+    [power setShowsMenuAsPrimaryAction:YES];
 
-            [power addAction:[UIAction actionWithHandler:^(__kindof UIAction *action) {
-                UIImpactFeedbackGenerator *gen = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
-                [gen impactOccurred];
-            }] forControlEvents:UIControlEventPrimaryActionTriggered];
-        }
+    [power addAction:[UIAction actionWithHandler:^(__kindof UIAction *action) {
+        UIImpactFeedbackGenerator *gen = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleHeavy];
+        [gen impactOccurred];
+    }] forControlEvents:UIControlEventPrimaryActionTriggered];
+}
+
 
         [view addSubview:power];
     }
