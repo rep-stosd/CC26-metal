@@ -9,5 +9,5 @@ Conflicts: com.dvntm.cc18
 Provides: com.cureux.cc26
 Icon: https://raw.githubusercontent.com/therealhoodboy/coreux/7cef61c0b96f05e285d17d030f9135c4e951e420/assets/tweak-icons/cc26.png
 Architecture: iphoneos-arm64
-Version: 0.4.9.5b
+Version: 0.4.9.6b
 Installed-Size: 220

@@ -307,7 +307,7 @@ void adjustLabelFontsInView(UIView *view) {
     if (!isInsideCC) return;
 
     NSInteger layout = ((NSNumber *)[self valueForKey:@"_layout"]).integerValue;
-    if (layout == 2) return;
+    if (layout == 2 || layout == 1) return;
 
     @try {
         UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
