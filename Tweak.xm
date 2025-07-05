@@ -22,6 +22,9 @@
 @interface MRUTransportButton : UIButton
 @end
 
+@interface MRUControlCenterViewController : UIViewController
+@end
+
 
 @interface MRUNowPlayingView : UIView
 @end
@@ -136,14 +139,7 @@ CGFloat getModuleRadius(UIView *moduleView) {
     return 0; // may need more cases for odd shaped modules such as CCSupport's 2x4 module
 }
 
-UIView *findSubviewOfClass(UIView *view, Class cls) {
-    if ([view isKindOfClass:cls]) return view;
-    for (UIView *subview in view.subviews) {
-        UIView *match = findSubviewOfClass(subview, cls);
-        if (match) return match;
-    }
-    return nil;
-}
+
 
 CGFloat calculatedRadiusForLayer(CALayer *layer, CGFloat fallbackRadius) {
     CGRect rect = layer.bounds;
@@ -161,6 +157,16 @@ NSArray *findAllSubviewsOfClass(UIView *view, Class cls) {
     }
     return result;
 }
+
+UIView *findSubviewOfClass(UIView *view, Class cls) {
+    if ([view isKindOfClass:cls]) return view;
+    for (UIView *subview in view.subviews) {
+        UIView *match = findSubviewOfClass(subview, cls);
+        if (match) return match;
+    }
+    return nil;
+}
+
 
 
 
@@ -237,19 +243,37 @@ void applyPrismToLayer(CALayer *layer) {
 - (void)layoutSubviews {
     %orig;
 
-    // MRUTransportButton finden
-    MRUTransportButton *transportButton = (MRUTransportButton *)findSubviewOfClass(self, %c(MRUTransportButton));
-    if (!transportButton) return;
+    CGFloat moduleWidth = self.bounds.size.width;
+    CGFloat moduleHeight = self.bounds.size.height;
 
-    // Neue X-Position berechnen (z. B. 8pt weiter links)
-    CGRect frame = transportButton.frame;
-    frame.origin.x += 20.0; // 🡐 8 Punkte nach links
-    transportButton.frame = frame;
+    NSArray *buttons = findAllSubviewsOfClass(self, %c(MRUTransportButton));
+    for (MRUTransportButton *btn in buttons) {
+        // 🎯 Nur den Button nehmen, der *direkt* unter dieser View hängt
+        if ([btn.superview isKindOfClass:[UIView class]] &&
+            btn.superview.superview == self) {
 
-    NSLog(@"[CC26] Adjusted MRUTransportButton frame: %@", NSStringFromCGRect(frame));
+            NSLog(@"[CC26] Found transport button: %@", btn);
+
+            CGFloat buttonWidth = btn.frame.size.width;
+            CGFloat buttonHeight = btn.frame.size.height;
+
+            // 📐 Dynamisch berechnete Position (5% nach links, 89% nach oben)
+            CGFloat buttonX = moduleWidth * 0.63;
+            CGFloat buttonY = moduleHeight * 0.08;
+
+            btn.translatesAutoresizingMaskIntoConstraints = YES;
+            btn.frame = CGRectMake(buttonX, buttonY, buttonWidth, buttonHeight);
+
+            btn.backgroundColor = [UIColor colorWithWhite:0.8 alpha:0.4];
+            btn.layer.cornerRadius = 18;
+            btn.layer.masksToBounds = YES;
+
+            break; // Nur den ersten passenden Button anpassen
+        }
+    }
 }
-
 %end
+
 
 
 %hook MRUNowPlayingView
@@ -258,7 +282,7 @@ void adjustLabelFontsInView(UIView *view) {
     for (UIView *subview in view.subviews) {
         if ([subview isKindOfClass:[UILabel class]]) {
             UILabel *label = (UILabel *)subview;
-            label.font = [UIFont systemFontOfSize:14.0 weight:UIFontWeightRegular];
+            label.font = [UIFont systemFontOfSize:13.0 weight:UIFontWeightRegular];
             label.adjustsFontSizeToFitWidth = YES;
             label.minimumScaleFactor = 0.8;
         } else {
@@ -286,15 +310,6 @@ void adjustLabelFontsInView(UIView *view) {
     if (layout == 2) return;
 
     @try {
-        /*
-        UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
-        if (!artworkView) return;
-
-        artworkView.frame = CGRectMake(16, 12, 50, 50);
-        artworkView.alpha = 1.0;
-        artworkView.layer.cornerRadius = 15;
-        artworkView.layer.masksToBounds = YES;
-        */
         UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
         if (!artworkView) return;
 
@@ -302,29 +317,16 @@ void adjustLabelFontsInView(UIView *view) {
         CGFloat moduleHeight = self.bounds.size.height;
 
         CGFloat artworkSize = MIN(moduleWidth, moduleHeight) * 0.32;
-        CGFloat artworkX = moduleWidth * 0.09;
-        CGFloat artworkY = moduleHeight * 0.07;
+        CGFloat artworkX = moduleWidth * 0.12;
+        CGFloat artworkY = moduleHeight * 0.08;
 
         artworkView.translatesAutoresizingMaskIntoConstraints = YES;
-        //artworkView.frame = CGRectMake(artworkX, artworkY, artworkSize, artworkSize);
         artworkView.frame = CGRectMake(artworkX, artworkY, artworkSize, artworkSize);
         artworkView.bounds = CGRectMake(artworkX, artworkY, artworkSize, artworkSize);
         artworkView.alpha = 1.0;
         artworkView.layer.cornerRadius = artworkSize * 0.3;
         artworkView.layer.masksToBounds = YES;
 
-        /*
-        UIView *headerView = findSubviewOfClass(self, %c(MRUNowPlayingHeaderView));
-        if (!headerView) return;
-
-        CGFloat padding = 1.0;
-        CGFloat headerX = padding;
-        CGFloat headerY = CGRectGetMaxY(artworkView.frame) + 6;
-        CGFloat headerWidth = self.bounds.size.width - 2 * padding;
-        CGFloat headerHeight = 40;
-
-        headerView.frame = CGRectMake(headerX, headerY, headerWidth, headerHeight);
-*/
         UIView *headerView = findSubviewOfClass(self, %c(MRUNowPlayingHeaderView));
         if (!headerView) return;
 
@@ -349,21 +351,7 @@ void adjustLabelFontsInView(UIView *view) {
         }
 
         adjustLabelFontsInView(headerView);
-/*
-        UIView *transportControlsView = findSubviewOfClass(self, %c(MRUNowPlayingTransportControlsView));
-        if (transportControlsView) {
-            CGFloat controlsWidth = transportControlsView.frame.size.width;
-            CGFloat controlsHeight = transportControlsView.frame.size.height;
 
-            CGFloat x = (self.bounds.size.width - controlsWidth) / 2.0;
-            CGFloat y = self.bounds.size.height - controlsHeight - 8.0;
-
-            transportControlsView.frame = CGRectMake(x, y, controlsWidth, controlsHeight);
-        }
-    } @catch (NSException *e) {
-        NSLog(@"[CC26] MRUNowPlayingView safe fallback: %@", e);
-    }
-}*/
 UIView *transportControlsView = findSubviewOfClass(self, %c(MRUNowPlayingTransportControlsView));
 if (transportControlsView) {
     CGFloat controlsWidth = transportControlsView.frame.size.width;
@@ -409,7 +397,6 @@ if (transportControlsView) {
         UIButton *leftButton = [self valueForKey:@"leftButton"];
         UIButton *rightButton = [self valueForKey:@"rightButton"];
         UIButton *centerButton = [self valueForKey:@"centerButton"];
-        UIButton *routingButton = [self valueForKey:@"routingButton"]; // AirPlay-Button
 
         if (leftButton && rightButton && centerButton) {
             CGPoint center = centerButton.center;
@@ -419,12 +406,6 @@ if (transportControlsView) {
             rightButton.center = CGPointMake(center.x + spacing, center.y);
         }
 
-        if (routingButton) {
-            routingButton.alpha = 1.0;
-            routingButton.layer.cornerRadius = 6;
-            routingButton.layer.masksToBounds = YES;
-            routingButton.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.3];
-        }
     } @catch (NSException *e) {
         NSLog(@"[CC26] MRUNowPlayingTransportControlsView crash prevented: %@", e);
     }
