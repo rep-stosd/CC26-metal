@@ -1,7 +1,8 @@
 #import <UIKit/UIKit.h>
 #import "Headers/NSTask.h"
 #include <spawn.h>
-
+#import <objc/runtime.h>
+#import <objc/message.h>
 
 
 @interface MTMaterialLayer : CALayer
@@ -14,6 +15,13 @@
 
 @interface CCUISteppedSliderView : UIControl
 @end
+
+@interface MRUControlCenterView : UIView
+@end
+
+@interface MRUTransportButton : UIButton
+@end
+
 
 @interface MRUNowPlayingView : UIView
 @end
@@ -224,6 +232,26 @@ void applyPrismToLayer(CALayer *layer) {
 
 %end
 
+%hook MRUControlCenterView
+
+- (void)layoutSubviews {
+    %orig;
+
+    // MRUTransportButton finden
+    MRUTransportButton *transportButton = (MRUTransportButton *)findSubviewOfClass(self, %c(MRUTransportButton));
+    if (!transportButton) return;
+
+    // Neue X-Position berechnen (z. B. 8pt weiter links)
+    CGRect frame = transportButton.frame;
+    frame.origin.x += 20.0; // 🡐 8 Punkte nach links
+    transportButton.frame = frame;
+
+    NSLog(@"[CC26] Adjusted MRUTransportButton frame: %@", NSStringFromCGRect(frame));
+}
+
+%end
+
+
 %hook MRUNowPlayingView
 
 void adjustLabelFontsInView(UIView *view) {
@@ -234,11 +262,10 @@ void adjustLabelFontsInView(UIView *view) {
             label.adjustsFontSizeToFitWidth = YES;
             label.minimumScaleFactor = 0.8;
         } else {
-            adjustLabelFontsInView(subview); // 🔁 Rekursiv weiter
+            adjustLabelFontsInView(subview);
         }
     }
 }
-
 
 - (void)layoutSubviews {
     %orig;
@@ -258,50 +285,109 @@ void adjustLabelFontsInView(UIView *view) {
     NSInteger layout = ((NSNumber *)[self valueForKey:@"_layout"]).integerValue;
     if (layout == 2) return;
 
-    // 🎨 Artwork-View stylen
-    UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
-    if (!artworkView) return;
+    @try {
+        /*
+        UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
+        if (!artworkView) return;
 
-    artworkView.frame = CGRectMake(16, 12, 50, 50);
-    artworkView.alpha = 1.0;
-    artworkView.layer.cornerRadius = 15;
-    artworkView.layer.masksToBounds = YES;
+        artworkView.frame = CGRectMake(16, 12, 50, 50);
+        artworkView.alpha = 1.0;
+        artworkView.layer.cornerRadius = 15;
+        artworkView.layer.masksToBounds = YES;
+        */
+        UIView *artworkView = findSubviewOfClass(self, %c(MRUArtworkView));
+        if (!artworkView) return;
 
-    // 🏷️ Header (Songtitel/Interpret)
-    UIView *headerView = findSubviewOfClass(self, %c(MRUNowPlayingHeaderView));
-    if (!headerView) return;
+        CGFloat moduleWidth = self.bounds.size.width;
+        CGFloat moduleHeight = self.bounds.size.height;
 
-    CGFloat padding = 1.0;
-    CGFloat headerX = padding;
-    CGFloat headerY = CGRectGetMaxY(artworkView.frame) + 6;
-    CGFloat headerWidth = self.bounds.size.width - 2 * padding;
-    CGFloat headerHeight = 40;
+        CGFloat artworkSize = MIN(moduleWidth, moduleHeight) * 0.32;
+        CGFloat artworkX = moduleWidth * 0.09;
+        CGFloat artworkY = moduleHeight * 0.07;
 
-    headerView.frame = CGRectMake(headerX, headerY, headerWidth, headerHeight);
-    [headerView setValue:@(NSTextAlignmentLeft) forKey:@"textAlignment"];
-        adjustLabelFontsInView(headerView);    
+        artworkView.translatesAutoresizingMaskIntoConstraints = YES;
+        //artworkView.frame = CGRectMake(artworkX, artworkY, artworkSize, artworkSize);
+        artworkView.frame = CGRectMake(artworkX, artworkY, artworkSize, artworkSize);
+        artworkView.bounds = CGRectMake(artworkX, artworkY, artworkSize, artworkSize);
+        artworkView.alpha = 1.0;
+        artworkView.layer.cornerRadius = artworkSize * 0.3;
+        artworkView.layer.masksToBounds = YES;
 
-    // 🎛️ Transport Controls verschieben
-    UIView *transportControlsView = findSubviewOfClass(self, %c(MRUNowPlayingTransportControlsView));
-    if (transportControlsView) {
-        CGFloat controlsWidth = transportControlsView.frame.size.width;
-        CGFloat controlsHeight = transportControlsView.frame.size.height;
+        /*
+        UIView *headerView = findSubviewOfClass(self, %c(MRUNowPlayingHeaderView));
+        if (!headerView) return;
 
-        CGFloat x = (self.bounds.size.width - controlsWidth) / 2.0;
-        CGFloat y = self.bounds.size.height - controlsHeight - 8.0;
+        CGFloat padding = 1.0;
+        CGFloat headerX = padding;
+        CGFloat headerY = CGRectGetMaxY(artworkView.frame) + 6;
+        CGFloat headerWidth = self.bounds.size.width - 2 * padding;
+        CGFloat headerHeight = 40;
 
-        transportControlsView.frame = CGRectMake(x, y, controlsWidth, controlsHeight);
+        headerView.frame = CGRectMake(headerX, headerY, headerWidth, headerHeight);
+*/
+        UIView *headerView = findSubviewOfClass(self, %c(MRUNowPlayingHeaderView));
+        if (!headerView) return;
+
+        CGFloat headerX = moduleWidth * 0.04;
+        CGFloat headerY = CGRectGetMaxY(artworkView.frame) + moduleHeight * 0.04;
+        CGFloat headerWidth = moduleWidth * 0.92;
+        CGFloat headerHeight = moduleHeight * 0.3;
+
+        headerView.frame = CGRectMake(headerX, headerY, headerWidth, headerHeight);
+
+        // 🎯 TextAlignment setzen – differenziert nach iOS-Version
+        if (@available(iOS 16.0, *)) {
+            // Sicheres KVC (nur unter iOS 16+ gültig)
+            [headerView setValue:@(NSTextAlignmentLeft) forKey:@"textAlignment"];
+        } else {
+            // 🔍 iOS 15: UILabel finden und direkt justieren
+        UIView *labelView = findSubviewOfClass(headerView, %c(MRUNowPlayingLabelView));
+            if (labelView && [labelView respondsToSelector:@selector(setLayout:)]) {
+            [labelView setValue:@(2) forKey:@"layout"];
+            }
+
+        }
+
+        adjustLabelFontsInView(headerView);
+/*
+        UIView *transportControlsView = findSubviewOfClass(self, %c(MRUNowPlayingTransportControlsView));
+        if (transportControlsView) {
+            CGFloat controlsWidth = transportControlsView.frame.size.width;
+            CGFloat controlsHeight = transportControlsView.frame.size.height;
+
+            CGFloat x = (self.bounds.size.width - controlsWidth) / 2.0;
+            CGFloat y = self.bounds.size.height - controlsHeight - 8.0;
+
+            transportControlsView.frame = CGRectMake(x, y, controlsWidth, controlsHeight);
+        }
+    } @catch (NSException *e) {
+        NSLog(@"[CC26] MRUNowPlayingView safe fallback: %@", e);
+    }
+}*/
+UIView *transportControlsView = findSubviewOfClass(self, %c(MRUNowPlayingTransportControlsView));
+if (transportControlsView) {
+    CGFloat controlsWidth = transportControlsView.frame.size.width;
+    CGFloat controlsHeight = transportControlsView.frame.size.height;
+
+    CGFloat x = (moduleWidth - controlsWidth) / 2.0;
+    CGFloat y = moduleHeight - controlsHeight - moduleHeight * 0.05;
+
+    transportControlsView.frame = CGRectMake(x, y, controlsWidth, controlsHeight);
+}
+    } @catch (NSException *e) {
+        NSLog(@"[CC26] MRUNowPlayingView safe fallback: %@", e);
     }
 }
 
 %end
+
+
 
 %hook MRUNowPlayingTransportControlsView
 
 - (void)layoutSubviews {
     %orig;
 
-    // Kontrolle: Ist das Control Center aktiv?
     BOOL isInsideCC = NO;
     UIView *v = self;
     while (v.superview) {
@@ -313,29 +399,34 @@ void adjustLabelFontsInView(UIView *view) {
     }
     if (!isInsideCC) return;
 
-    // Optional: Kompaktmodus prüfen (Layout 0)
-    MRUNowPlayingView *npView = (MRUNowPlayingView *)self.superview;
-    NSInteger layout = [[npView valueForKey:@"_layout"] integerValue];
-    if (layout == 2) return;
+    @try {
+        MRUNowPlayingView *npView = (MRUNowPlayingView *)self.superview;
+        if (![npView isKindOfClass:%c(MRUNowPlayingView)]) return;
 
-    // Buttons enger setzen
-    UIButton *leftButton = [self valueForKey:@"leftButton"];
-    UIButton *rightButton = [self valueForKey:@"rightButton"];
-    UIButton *centerButton = [self valueForKey:@"centerButton"];
-    UIButton *routingButton = [self valueForKey:@"routingButton"]; // AirPlay-Button
+        NSInteger layout = [[npView valueForKey:@"_layout"] integerValue];
+        if (layout == 2) return;
 
-    if (leftButton && rightButton && centerButton) {
-        CGPoint center = centerButton.center;
-        CGFloat spacing = 40.0;
+        UIButton *leftButton = [self valueForKey:@"leftButton"];
+        UIButton *rightButton = [self valueForKey:@"rightButton"];
+        UIButton *centerButton = [self valueForKey:@"centerButton"];
+        UIButton *routingButton = [self valueForKey:@"routingButton"]; // AirPlay-Button
 
-        leftButton.center = CGPointMake(center.x - spacing, center.y);
-        rightButton.center = CGPointMake(center.x + spacing, center.y);
-    }
-    if (routingButton) {
-        routingButton.alpha = 1.0;
-        routingButton.layer.cornerRadius = 6;
-        routingButton.layer.masksToBounds = YES;
-        routingButton.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.3];
+        if (leftButton && rightButton && centerButton) {
+            CGPoint center = centerButton.center;
+            CGFloat spacing = 40.0;
+
+            leftButton.center = CGPointMake(center.x - spacing, center.y);
+            rightButton.center = CGPointMake(center.x + spacing, center.y);
+        }
+
+        if (routingButton) {
+            routingButton.alpha = 1.0;
+            routingButton.layer.cornerRadius = 6;
+            routingButton.layer.masksToBounds = YES;
+            routingButton.backgroundColor = [UIColor colorWithWhite:0.1 alpha:0.3];
+        }
+    } @catch (NSException *e) {
+        NSLog(@"[CC26] MRUNowPlayingTransportControlsView crash prevented: %@", e);
     }
 }
 
