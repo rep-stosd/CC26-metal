@@ -31,5 +31,3 @@ $(TWEAK_NAME)_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
-after-stage::
-	@echo "==> Package built: $(EXPORT_PACKAGE)"
