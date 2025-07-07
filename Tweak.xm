@@ -41,6 +41,11 @@
 @property (nonatomic, retain) id<MTRecipeMaterialSettingsProviding> finalSettings;
 @end
 
+@interface SpringBoard: NSObject
++ (id)sharedApplication;
+- (void)applicationOpenURL:(id)arg0;
+@end
+
 #pragma mark - Calculation of border radius for different modules
 
 CGFloat calculateArea(CGRect visibleRect) {
@@ -608,6 +613,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
         [plus addAction:[UIAction actionWithHandler:^(__kindof UIAction *action) {
             UIImpactFeedbackGenerator *gen = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium];
             [gen impactOccurred];
+            [((SpringBoard *)[%c(SpringBoard) sharedApplication]) applicationOpenURL:[NSURL URLWithString:@"prefs:root=ControlCenter&path=CUSTOMIZE_CONTROLS"]];
             NSLog(@"[+] Plus tapped");
         }] forControlEvents:UIControlEventTouchUpInside];
 

@@ -1,6 +1,0 @@
-version: "Swift version 5.8 (swift-5.8-RELEASE)"
-options: "6ce3a0aaf6aec77e1f0c07871f993b0f68fbf76e96659c7bbec12c0f23d15154"
-build_start_time: [1751748126, 468691000]
-build_end_time: [1751748126, 676285000]
-inputs:
-  "Sources/CC26/RootListController.swift": !dirty [1751747395, 0]
