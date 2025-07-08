@@ -20,6 +20,7 @@
 @interface CCUIModularControlCenterViewController : UIViewController @end
 @interface CCUIContentModuleContentContainerView : UIView @end
 @interface CCUIOverlayViewController : UIViewController @end
+@interface CCUIDisplayModuleViewController : UIViewController @end
 @interface CCUIModularControlCenterOverlayViewController : CCUIOverlayViewController @end
 
 @interface UIView (PrivateHierarchy)
@@ -255,6 +256,11 @@ void applyPrismToLayer(CALayer *layer) {
         }
     }
 }
+%end
+
+%hook CCUIDisplayModuleViewController
+
+
 %end
 
 
@@ -684,8 +690,6 @@ dispatch_async(dispatch_get_main_queue(), ^{
     // Animation je nach Zustand
     switch (state) {
         case 1: {
-            plus.transform = CGAffineTransformMakeScale(0.6, 0.6);
-            power.transform = CGAffineTransformMakeScale(0.6, 0.6);
             [UIView animateWithDuration:0.45
                                   delay:0.0
                  usingSpringWithDamping:0.7
