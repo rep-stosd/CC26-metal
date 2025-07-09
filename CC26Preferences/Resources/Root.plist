@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.cureux.cc26</string>
+			<key>key</key>
+			<string>enabled</string>
+			<key>label</key>
+			<string>Enable Tweak</string>
+			<key>PostNotification</key>
+            <string>com.cureux.cc26/preferences.changed</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string></string>
+		</dict>
+		<dict>
+            <key>cell</key>
+            <string>PSLinkListCell</string>
+            <key>default</key>
+            <string></string>
+            <key>defaults</key>
+            <string>com.cureux.cc26</string>
+            <key>detail</key>
+            <string>CC26ButtonsListController</string>
+            <key>height</key>
+            <string>60</string>
+            <key>label</key>
+            <string>Top Buttons</string>
+        </dict>
+	</array>
+	<key>title</key>
+	<string>CC26</string>
+</dict>
+</plist>

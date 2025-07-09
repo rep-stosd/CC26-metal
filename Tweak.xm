@@ -1,9 +1,20 @@
 #import <UIKit/UIKit.h>
 #import "Headers/NSTask.h"
-#include <spawn.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
+#include <spawn.h>
+#include <rootless.h>
 
+static NSString *domain = @"com.cureux.cc26";
+static NSString *preferencesNotification = @"com.cureux.cc26/preferences.changed";
+
+// preferences variables
+static BOOL enabled;
+
+@interface NSUserDefaults (CC26)
+- (id)objectForKey:(NSString *)key inDomain:(NSString *)domain;
+- (void)setObject:(id)value forKey:(NSString *)key inDomain:(NSString *)domain;
+@end
 
 @interface MTMaterialLayer : CALayer
 @property (nonatomic, copy, readwrite) NSString *recipeName;
@@ -187,7 +198,7 @@ void applyPrismToLayer(CALayer *layer) {
 }
 
 
-
+%group CC26
 %hook MTMaterialLayer
 
 - (void)_configureIfNecessaryWithSettingsInterpolator:(MTMaterialSettingsInterpolator *)interpolator {
@@ -598,6 +609,9 @@ dispatch_async(dispatch_get_main_queue(), ^{
     // Plus-Button
     UIButton *plus = [view viewWithTag:999];
     if (!plus) {
+        NSDictionary *addColorDict = [[NSUserDefaults standardUserDefaults] objectForKey:@"addButtonColorDict" inDomain:domain];
+		UIColor *addColor = (addColorDict != nil) ? [UIColor colorWithRed:[addColorDict[@"red"] floatValue] green:[addColorDict[@"green"] floatValue] blue:[addColorDict[@"blue"] floatValue] alpha:1.0] : [UIColor whiteColor];
+
         plus = [UIButton buttonWithType:UIButtonTypeSystem];
         plus.tag = 999;
 
@@ -605,7 +619,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
         UIImage *plusImage = [[UIImage systemImageNamed:@"plus"] imageByApplyingSymbolConfiguration:config];
 
         [plus setImage:plusImage forState:UIControlStateNormal];
-        plus.tintColor = [UIColor whiteColor];
+        plus.tintColor = addColor;
         plus.alpha = 0.0;
         plus.transform = CGAffineTransformMakeScale(0.6, 0.6);
         plus.frame = CGRectMake(safeLeft, yOffset - 10, buttonSize, buttonSize);
@@ -623,6 +637,9 @@ dispatch_async(dispatch_get_main_queue(), ^{
     // Power-Button
     UIButton *power = [view viewWithTag:998];
     if (!power) {
+        NSDictionary *powerColorDict = [[NSUserDefaults standardUserDefaults] objectForKey:@"powerButtonColorDict" inDomain:domain];
+		UIColor *powerColor = (powerColorDict != nil) ? [UIColor colorWithRed:[powerColorDict[@"red"] floatValue] green:[powerColorDict[@"green"] floatValue] blue:[powerColorDict[@"blue"] floatValue] alpha:1.0] : [UIColor systemRedColor];
+
         power = [UIButton buttonWithType:UIButtonTypeSystem];
         power.tag = 998;
 
@@ -630,7 +647,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
         UIImage *powerImage = [[UIImage systemImageNamed:@"power"] imageByApplyingSymbolConfiguration:config];
 
         [power setImage:powerImage forState:UIControlStateNormal];
-        power.tintColor = [UIColor redColor];
+        power.tintColor = powerColor;
         power.alpha = 0.0;
         power.transform = CGAffineTransformMakeScale(0.6, 0.6);
         power.frame = CGRectMake(view.bounds.size.width - safeRight - buttonSize, yOffset - 10, buttonSize, buttonSize);
@@ -642,7 +659,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
                                                          handler:^(__kindof UIAction *action) {
                 pid_t pid;
                 const char *args[] = {"sbreload", NULL};
-                posix_spawn(&pid, "/usr/bin/sbreload", NULL, NULL, (char *const *)args, NULL);
+                posix_spawn(&pid, ROOT_PATH("/usr/bin/sbreload"), NULL, NULL, (char *const *)args, NULL);
             }];
 
             UIAction *uicacheAction = [UIAction actionWithTitle:@"UICache"
@@ -651,7 +668,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
                                                         handler:^(__kindof UIAction *action) {
                 pid_t pid;
                 const char *args[] = {"uicache", "-a", NULL};
-                posix_spawn(&pid, "/usr/bin/uicache", NULL, NULL, (char *const *)args, NULL);
+                posix_spawn(&pid, ROOT_PATH("/usr/bin/uicache"), NULL, NULL, (char *const *)args, NULL);
             }];
 
             UIAction *userspaceAction = [UIAction actionWithTitle:@"Userspace Reboot"
@@ -660,7 +677,7 @@ dispatch_async(dispatch_get_main_queue(), ^{
                                                           handler:^(__kindof UIAction *action) {
                 pid_t pid;
                 const char *args[] = {"launchctl", "reboot", "userspace", NULL};
-                posix_spawn(&pid, "/bin/launchctl", NULL, NULL, (char *const *)args, NULL);
+                posix_spawn(&pid, ROOT_PATH("/bin/launchctl"), NULL, NULL, (char *const *)args, NULL);
             }];
 
             UIMenu *menu = [UIMenu menuWithTitle:@"Choose Action"
@@ -714,4 +731,17 @@ dispatch_async(dispatch_get_main_queue(), ^{
 }
 
 %end
+%end
 
+static void loadPreferences(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
+    NSNumber *enabledValue = (NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"enabled" inDomain:domain];
+    enabled = (enabledValue) ? [enabledValue boolValue] : NO;
+}
+
+%ctor {
+    loadPreferences(NULL, NULL, NULL, NULL, NULL); // Load prefs
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, loadPreferences, (CFStringRef)preferencesNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
+    if (enabled) {
+        %init(CC26)
+    }
+}
