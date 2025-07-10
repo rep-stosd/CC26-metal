@@ -5,7 +5,14 @@
 - (instancetype)init {
 	self = [super init];
 	if (self) {
+		self.enableSwitch = [[UISwitch alloc] init];
+		self.enableSwitch.onTintColor = TINT_COLOR;
+		[self.enableSwitch addTarget:self action:@selector(switchStateChanged:) forControlEvents:UIControlEventValueChanged];
+
 		[self setupButtonMenu];
+
+		self.navigationController.navigationBar.prefersLargeTitles = YES;
+		self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
 	}
 	return self;
 }
@@ -14,6 +21,63 @@
 		_specifiers = [self loadSpecifiersFromPlistName:@"Root" target:self];
 	}
 	return _specifiers;
+}
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+
+	[self setEnableSwitchState];
+
+	self.view.tintColor = TINT_COLOR;
+	[[UIApplication sharedApplication] keyWindow].tintColor = TINT_COLOR;
+	[self.navigationController.navigationItem.navigationBar sizeToFit];
+	_table.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+}
+- (void)viewWillDisappear:(BOOL)animated {
+	[[UIApplication sharedApplication] keyWindow].tintColor = nil;
+	[super viewWillDisappear:animated];
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+
+	NSBundle *resourceBundle = [NSBundle bundleWithPath:ROOT_PATH_NS(@"/Library/PreferenceBundles/CC26Preferences.bundle")];
+
+	self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
+	
+	self.headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 200, 180)];
+	self.enableSwitch.translatesAutoresizingMaskIntoConstraints = NO;
+
+	self.headerImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+	self.headerImageView.contentMode = UIViewContentModeScaleAspectFit;
+	self.headerImageView.translatesAutoresizingMaskIntoConstraints = NO;
+	self.headerImageView.image = [UIImage imageWithContentsOfFile:[resourceBundle pathForResource:@"header" ofType:@"png"]];
+
+	[self.headerView addSubview:self.headerImageView];
+	[self.headerView addSubview:self.enableSwitch];
+
+	[NSLayoutConstraint activateConstraints:@[
+		[self.headerImageView.centerXAnchor constraintEqualToAnchor:self.headerView.centerXAnchor],
+		[self.headerImageView.topAnchor constraintEqualToAnchor:self.headerView.topAnchor],
+		[self.headerImageView.widthAnchor constraintEqualToConstant:100],
+		[self.headerImageView.heightAnchor constraintEqualToConstant:100],
+		[self.enableSwitch.centerXAnchor constraintEqualToAnchor:self.headerView.centerXAnchor],
+		[self.enableSwitch.topAnchor constraintEqualToAnchor:self.headerImageView.bottomAnchor constant:16],
+	]];
+	_table.tableHeaderView = self.headerView;
+}
+- (void)setEnableSwitchState {
+	if (![[[NSUserDefaults standardUserDefaults] objectForKey:@"enabled" inDomain:domain] boolValue]) {
+		[[self enableSwitch] setOn:NO animated:NO];
+	} else {
+		[[self enableSwitch] setOn:YES animated:NO];
+	}
+}
+- (void)switchStateChanged:(UISwitch *)sender {
+	if (self.enableSwitch.isOn) {
+		[[NSUserDefaults standardUserDefaults] setObject:@YES forKey:@"enabled" inDomain:domain];
+	} else {
+		[[NSUserDefaults standardUserDefaults] setObject:@NO forKey:@"enabled" inDomain:domain];
+	}
+	[[NSUserDefaults standardUserDefaults] synchronize];
 }
 - (void)setupButtonMenu {
 	UIAction *respring = [UIAction actionWithTitle:@"Respring" image:[UIImage systemImageNamed:@"arrow.clockwise.circle.fill"] identifier:nil handler:^(__kindof UIAction *_Nonnull action) {
@@ -30,6 +94,10 @@
 	
 	self.navigationItem.rightBarButtonItems = @[optionsItem];
 }
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+	tableView.tableHeaderView = self.headerView;
+	return [super tableView:tableView cellForRowAtIndexPath:indexPath];
+}
 @end
 
 @implementation CC26ButtonsListController
@@ -38,6 +106,26 @@
 		_specifiers = [self loadSpecifiersFromPlistName:@"Buttons" target:self];
 	}
 	return _specifiers;
+}
+- (instancetype)init {
+	self = [super init];
+	if (self) {
+		self.navigationController.navigationBar.prefersLargeTitles = YES;
+		self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
+	}
+	return self;
+}
+- (void)viewDidLoad {
+    [super viewDidLoad];
+	self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
+}
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+
+	self.view.tintColor = TINT_COLOR;
+	[[UIApplication sharedApplication] keyWindow].tintColor = TINT_COLOR;
+	[self.navigationController.navigationItem.navigationBar sizeToFit];
+	_table.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
 }
 @end
 
