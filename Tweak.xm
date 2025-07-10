@@ -32,6 +32,7 @@ static BOOL enableTopButtons;
 @interface CCUIModularControlCenterViewController : UIViewController @end
 @interface CCUIContentModuleContentContainerView : UIView @end
 @interface CCUIOverlayViewController : UIViewController @end
+@interface CCUIDisplayModuleViewController : UIViewController @end
 @interface CCUIModularControlCenterOverlayViewController : CCUIOverlayViewController @end
 
 @interface UIView (PrivateHierarchy)
@@ -267,6 +268,11 @@ void applyPrismToLayer(CALayer *layer) {
         }
     }
 }
+%end
+
+%hook CCUIDisplayModuleViewController
+
+
 %end
 
 
