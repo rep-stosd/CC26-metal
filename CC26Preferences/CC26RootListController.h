@@ -3,8 +3,15 @@
 #import <Preferences/PSTableCell.h>
 #import <Preferences/PSSpecifier.h>
 #import <Preferences/PSControlTableCell.h>
+#include <rootless.h>
 
 static NSString *domain = @"com.cureux.cc26";
+
+#define TINT_COLOR [UIColor colorWithRed: 0.30 green: 0.35 blue: 0.53 alpha: 1.00]
+
+@interface UINavigationItem (CC26Preferences)
+@property (assign, nonatomic) UINavigationBar *navigationBar; 
+@end
 
 @interface FBSSystemService : NSObject
 + (id)sharedService;
@@ -27,10 +34,18 @@ static NSString *domain = @"com.cureux.cc26";
 - (UIViewController *)_viewControllerForAncestor;
 @end
 
-@interface CC26RootListController : PSListController
+@interface CC26RootListController : PSListController {
+    UITableView *_table;
+}
+@property (nonatomic, strong) UIView *headerView;
+@property (nonatomic, strong) UIImageView *headerImageView;;
+@property (nonatomic, strong) UISwitch *enableSwitch;
+- (void)setEnableSwitchState;
 @end
 
-@interface CC26ButtonsListController : PSListController
+@interface CC26ButtonsListController : PSListController {
+    UITableView *_table;
+}
 @end
 
 @interface CC26ColorCell : PSControlTableCell <UIColorPickerViewControllerDelegate>

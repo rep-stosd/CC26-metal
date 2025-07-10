@@ -9,6 +9,6 @@ CC26Preferences_FILES = CC26RootListController.m
 CC26Preferences_FRAMEWORKS = UIKit
 CC26Preferences_PRIVATE_FRAMEWORKS = Preferences
 CC26Preferences_INSTALL_PATH = /Library/PreferenceBundles
-CC26Preferences_CFLAGS = -fobjc-arc
+CC26Preferences_CFLAGS = -fobjc-arc -Wdeprecated-declarations -Wno-deprecated-declarations
 
 include $(THEOS_MAKE_PATH)/bundle.mk

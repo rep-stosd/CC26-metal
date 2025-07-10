@@ -4,6 +4,20 @@
 <dict>
 	<key>items</key>
 	<array>
+        <dict>
+			<key>cell</key>
+        	<string>PSSwitchCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.cureux.cc26</string>
+			<key>key</key>
+			<string>enableTopButtons</string>
+			<key>label</key>
+			<string>Enable Top Buttons</string>
+			<key>PostNotification</key>
+            <string>com.cureux.cc26/preferences.changed</string>
+		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
@@ -44,6 +58,6 @@
         </dict>
 	</array>
 	<key>title</key>
-	<string>Buttons</string>
+	<string>Top Buttons</string>
 </dict>
 </plist>
