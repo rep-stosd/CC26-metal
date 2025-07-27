@@ -7,8 +7,6 @@
         <dict>
 			<key>cell</key>
         	<string>PSSwitchCell</string>
-            <key>cellClass</key>
-            <string>CC26SwitchCell</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
@@ -60,6 +58,6 @@
         </dict>
 	</array>
 	<key>title</key>
-	<string>Top Buttons</string>
+	<string>Blur Configuration</string>
 </dict>
 </plist>
