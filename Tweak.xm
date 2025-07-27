@@ -1,63 +1,4 @@
-#import <UIKit/UIKit.h>
-#import "Headers/NSTask.h"
-#import <objc/runtime.h>
-#import <objc/message.h>
-#include <spawn.h>
-#include <rootless.h>
-
-static NSString *domain = @"com.cureux.cc26";
-static NSString *preferencesNotification = @"com.cureux.cc26/preferences.changed";
-
-// preferences variables
-static BOOL enabled;
-static BOOL enableTopButtons;
-
-@interface NSUserDefaults (CC26)
-- (id)objectForKey:(NSString *)key inDomain:(NSString *)domain;
-- (void)setObject:(id)value forKey:(NSString *)key inDomain:(NSString *)domain;
-@end
-
-@interface MTMaterialLayer : CALayer
-@property (nonatomic, copy, readwrite) NSString *recipeName;
-@property (atomic, assign, readonly) CGRect visibleRect;
-@end
-
-@interface MTMaterialView : UIView @end
-@interface CCUISteppedSliderView : UIControl @end
-@interface MRUControlCenterView : UIView @end
-@interface MRUTransportButton : UIButton @end
-@interface MRUControlCenterViewController : UIViewController @end
-@interface MRUNowPlayingView : UIView @end
-@interface MRUNowPlayingTransportControlsView : UIView @end
-@interface CCUIModularControlCenterViewController : UIViewController @end
-@interface CCUIContentModuleContentContainerView : UIView @end
-@interface CCUIOverlayViewController : UIViewController @end
-@interface CCUIDisplayModuleViewController : UIViewController @end
-@interface CCUIModularControlCenterOverlayViewController : CCUIOverlayViewController @end
-
-@interface UIView (PrivateHierarchy)
-- (UIViewController *)_viewControllerForAncestor;
-@end
-
-@interface CALayer (Private)
-@property (assign) BOOL continuousCorners;
-@property (atomic, assign, readwrite) id unsafeUnretainedDelegate;
-@end
-
-@class MTMaterialSettingsInterpolator;
-
-@protocol MTRecipeMaterialSettingsProviding
-- (id)baseMaterialSettings;
-@end
-
-@interface MTMaterialSettingsInterpolator : NSObject
-@property (nonatomic, retain) id<MTRecipeMaterialSettingsProviding> finalSettings;
-@end
-
-@interface SpringBoard: NSObject
-+ (id)sharedApplication;
-- (void)applicationOpenURL:(id)arg0;
-@end
+#import "Tweak.h"
 
 #pragma mark - Calculation of border radius for different modules
 
@@ -134,9 +75,6 @@ CGFloat getModuleRadius(UIView *moduleView) {
     return 0; // may need more cases for odd shaped modules such as CCSupport's 2x4 module
 }
 
-
-
-
 CGFloat calculatedRadiusForLayer(CALayer *layer, CGFloat fallbackRadius) {
     CGRect rect = layer.bounds;
     if (CGRectIsEmpty(rect)) {
@@ -162,9 +100,6 @@ UIView *findSubviewOfClass(UIView *view, Class cls) {
     }
     return nil;
 }
-
-
-
 
 #pragma mark - iOS 26 border
 
@@ -199,43 +134,47 @@ void applyPrismToLayer(CALayer *layer) {
     gradient.cornerRadius = layer.cornerRadius;
 }
 
-
 %group CC26
 %hook MTMaterialLayer
-
 - (void)_configureIfNecessaryWithSettingsInterpolator:(MTMaterialSettingsInterpolator *)interpolator {
     %orig;
-    id<MTRecipeMaterialSettingsProviding> settings = interpolator.finalSettings;
-    id base = [settings baseMaterialSettings];
-    if (![base respondsToSelector:@selector(setValue:forKey:)]) return;
+    NSArray *allowedAncestors = @[@"CCUIModularControlCenterOverlayViewController", @"MRUControlCenterViewController", @"CCUIContentModuleContainerViewController", @"FCCCControlCenterModule"];
+    UIView *parentView = (UIView *)self.delegate;
+    if ([allowedAncestors containsObject:NSStringFromClass([[parentView _viewControllerForAncestor] class])]) { // Hopefully fix crashes in other parts of SpringBoard or apps that load MaterialKit bundle via SpringBoard
+        id<MTRecipeMaterialSettingsProviding> settings = interpolator.finalSettings;
+        id base = [settings baseMaterialSettings];
+        if (![base respondsToSelector:@selector(setValue:forKey:)]) return;
 
-    if ([self.recipeName isEqualToString:@"modules"]) {
-        [base setValue:@(-0.04) forKey:@"brightness"];
-        [base setValue:@(0.6) forKey:@"blurRadius"];
-        [base setValue:@(-0.045) forKey:@"zoom"];
-        [base setValue:@(1.0) forKey:@"saturation"];
-        [base setValue:@(0) forKey:@"luminanceAmount"];
-    } else if ([self.recipeName isEqualToString:@"modulesBackground"]) {
-        [base setValue:@(0.0) forKey:@"zoom"];
-        [base setValue:@(4.3) forKey:@"blurRadius"];
-        [base setValue:@(-0.14) forKey:@"brightness"];
-        [base setValue:@(1.1) forKey:@"saturation"];
-    } else if ([self.recipeName isEqualToString:@"auxiliary"]) {
-        [base setValue:@(2.3) forKey:@"blurRadius"];
+        if ([self.recipeName isEqualToString:@"modules"]) {
+            [base setValue:@(-0.04) forKey:@"brightness"];
+            [base setValue:@(0.6) forKey:@"blurRadius"];
+            [base setValue:@(-0.045) forKey:@"zoom"];
+            [base setValue:@(1.0) forKey:@"saturation"];
+            [base setValue:@(0) forKey:@"luminanceAmount"];
+        } else if ([self.recipeName isEqualToString:@"modulesBackground"]) {
+            [base setValue:@(0.0) forKey:@"zoom"];
+            [base setValue:@(4.3) forKey:@"blurRadius"];
+            [base setValue:@(-0.14) forKey:@"brightness"];
+            [base setValue:@(1.1) forKey:@"saturation"];
+        } else if ([self.recipeName isEqualToString:@"auxiliary"]) {
+            [base setValue:@(2.3) forKey:@"blurRadius"];
+        }
     }
 }
-
 - (void)layoutSublayers {
     %orig;
     NSArray<NSString *> *titles = @[@"modules", @"moduleFill.highlight.generatedRecipe"];
-    if (![titles containsObject:self.recipeName]) return;
-        applyPrismToLayer(self);
+    NSArray *allowedAncestors = @[@"CCUIModularControlCenterOverlayViewController", @"MRUControlCenterViewController", @"CCUIContentModuleContainerViewController", @"FCCCControlCenterModule"];
+    UIView *parentView = (UIView *)self.delegate;
+    if ([titles containsObject:self.recipeName]) {
+        if ([allowedAncestors containsObject:NSStringFromClass([[parentView _viewControllerForAncestor] class])]) {
+            applyPrismToLayer(self);
+        }
+    }
 }
-
 %end
 
 %hook MRUControlCenterView
-
 - (void)layoutSubviews {
     %orig;
 
@@ -270,15 +209,78 @@ void applyPrismToLayer(CALayer *layer) {
 }
 %end
 
-%hook CCUIDisplayModuleViewController
+%hook CCUIBaseSliderView
+%property (nonatomic, retain) UIImageView *cc26GlyphImageView;
+- (void)setGlyphVisible:(BOOL)visible {
+    %orig(colorSliderGlyphs ? NO : visible);
+}
+- (void)didMoveToWindow {
+    %orig;
+    if (colorSliderGlyphs) {
+        [self setGlyphVisible:NO];
 
+        UIColor *tintColor;
+        if ([[self _viewControllerForAncestor] isKindOfClass:%c(MRUVolumeViewController)]) {
+            NSDictionary *volumeColorDict = [[NSUserDefaults standardUserDefaults] objectForKey:@"volumeColorDict" inDomain:domain];
+            tintColor = (volumeColorDict != nil) ? [UIColor colorWithRed:[volumeColorDict[@"red"] floatValue] green:[volumeColorDict[@"green"] floatValue] blue:[volumeColorDict[@"blue"] floatValue] alpha:1.0] : [UIColor colorWithRed:0.35 green:0.67 blue:0.88 alpha:1.00];
+        } else if ([[self _viewControllerForAncestor] isKindOfClass:%c(CCUIDisplayModuleViewController)]) {
+            NSDictionary *brightnessColorDict = [[NSUserDefaults standardUserDefaults] objectForKey:@"brightnessColorDict" inDomain:domain];
+            tintColor = (brightnessColorDict != nil) ? [UIColor colorWithRed:[brightnessColorDict[@"red"] floatValue] green:[brightnessColorDict[@"green"] floatValue] blue:[brightnessColorDict[@"blue"] floatValue] alpha:1.0] : [UIColor colorWithRed:0.96 green:0.81 blue:0.27 alpha:1.00];
+        }
 
+        if (!self.cc26GlyphImageView) self.cc26GlyphImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+        self.cc26GlyphImageView.translatesAutoresizingMaskIntoConstraints = NO;
+        self.cc26GlyphImageView.contentMode = UIViewContentModeScaleAspectFit;
+        self.cc26GlyphImageView.tintColor = tintColor;
+        self.cc26GlyphImageView.center = self.glyphCenter;
+        [self addSubview:self.cc26GlyphImageView];
+
+        [self cc26_setGlyphValue:self.value];
+
+        [NSLayoutConstraint activateConstraints:@[
+            [self.cc26GlyphImageView.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
+            [self.cc26GlyphImageView.bottomAnchor constraintEqualToAnchor:self.bottomAnchor constant:-24],
+            [self.cc26GlyphImageView.widthAnchor constraintEqualToConstant:40],
+            [self.cc26GlyphImageView.heightAnchor constraintEqualToConstant:40]
+        ]];
+    }
+}
+- (void)setValue:(float)value {
+    %orig;
+    if (colorSliderGlyphs) {
+        [self cc26_setGlyphValue:value];
+    }
+}
+%new
+- (void)cc26_setGlyphValue:(float)value {
+    CGFloat sliderValue = value * 100;
+    if ([[self _viewControllerForAncestor] isKindOfClass:%c(MRUVolumeViewController)]) {
+        UIImage *icon;
+        if (sliderValue == 0) {
+            icon = [UIImage systemImageNamed:@"speaker.slash.fill"];
+        } else if (sliderValue >= 0 && sliderValue <= 39) {
+            icon = [UIImage systemImageNamed:@"speaker.wave.1.fill"];
+        } else if (sliderValue >= 40 && sliderValue <= 69) {
+            icon = [UIImage systemImageNamed:@"speaker.wave.2.fill"];
+        } else {
+            icon = [UIImage systemImageNamed:@"speaker.wave.3.fill"];
+        }
+        [self.cc26GlyphImageView setImage:icon];
+    } else if ([[self _viewControllerForAncestor] isKindOfClass:%c(CCUIDisplayModuleViewController)]) {
+        UIImage *icon;
+        if (sliderValue >= 0 && sliderValue <= 39) {
+            icon = [UIImage systemImageNamed:@"sun.min.fill"];
+        } else if (sliderValue >= 40 && sliderValue <= 69) {
+            icon = [UIImage systemImageNamed:@"sun.max.fill"];
+        } else {
+            icon = [UIImage systemImageNamed:@"sun.max.fill"];
+        }
+        [self.cc26GlyphImageView setImage:icon];
+    }
+}
 %end
 
-
-
 %hook MRUNowPlayingView
-
 void adjustLabelFontsInView(UIView *view) {
     for (UIView *subview in view.subviews) {
         if ([subview isKindOfClass:[UILabel class]]) {
@@ -292,7 +294,6 @@ void adjustLabelFontsInView(UIView *view) {
     }
 }
 static BOOL cc26LayoutInProgress = NO;
-
 - (void)layoutSubviews {
     %orig;
 
@@ -410,10 +411,9 @@ static BOOL cc26LayoutInProgress = NO;
 
     cc26LayoutInProgress = NO;
 }
-
 %end
-%hook MRUNowPlayingTransportControlsView
 
+%hook MRUNowPlayingTransportControlsView
 - (void)layoutSubviews {
     %orig;
 
@@ -451,7 +451,6 @@ static BOOL cc26LayoutInProgress = NO;
         NSLog(@"[CC26] MRUNowPlayingTransportControlsView crash prevented: %@", e);
     }
 }
-
 %end
 
 BOOL isSubviewOfType(UIView *view, NSArray<Class> *targetClasses) {
@@ -474,7 +473,6 @@ BOOL isSubviewOfType(UIView *view, NSArray<Class> *targetClasses) {
 }
 
 %hook CCUIContentModuleContentContainerView
-
 void applyBorderToSpecialViews(UIView *view, BOOL expanded) {
     if (!view) return;
 
@@ -507,11 +505,11 @@ void applyBorderToSpecialViews(UIView *view, BOOL expanded) {
 - (void)layoutSubviews { // Hate to use this method, but only one that doesn't cause visual glitches
     BOOL opened = MSHookIvar<BOOL>(self, "_expanded");
     int radius = opened ? 65 : getModuleRadius(self); 
-dispatch_async(dispatch_get_main_queue(), ^{
-    applyBorderToSpecialViews(self, opened);
-});
+    dispatch_async(dispatch_get_main_queue(), ^{
+        applyBorderToSpecialViews(self, opened);
+    });
 
-   NSArray<Class> *suppressedClasses = @[
+    NSArray<Class> *suppressedClasses = @[
         %c(CCUIContinuousSliderView),
         %c(MRUNowPlayingView),
         %c(FCUIActivityListContentView)
@@ -737,7 +735,6 @@ dispatch_async(dispatch_get_main_queue(), ^{
         }
     }
 }
-
 %end
 %end
 
@@ -746,6 +743,8 @@ static void loadPreferences(CFNotificationCenterRef center, void *observer, CFSt
     enabled = (enabledValue) ? [enabledValue boolValue] : NO;
     NSNumber *enableTopButtonsValue = (NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"enableTopButtons" inDomain:domain];
     enableTopButtons = (enableTopButtonsValue) ? [enableTopButtonsValue boolValue] : YES;
+    NSNumber *colorSliderGlyphsValue = (NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"colorSliderGlyphs" inDomain:domain];
+    colorSliderGlyphs = (colorSliderGlyphsValue) ? [colorSliderGlyphsValue boolValue] : YES;
 }
 
 %ctor {

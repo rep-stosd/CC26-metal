@@ -14,9 +14,9 @@
 			<key>defaults</key>
 			<string>com.cureux.cc26</string>
 			<key>key</key>
-			<string>enableTopButtons</string>
+			<string>colorSliderGlyphs</string>
 			<key>label</key>
-			<string>Enable Top Buttons</string>
+			<string>Enable Tinted Slider Glyphs</string>
 			<key>PostNotification</key>
             <string>com.cureux.cc26/preferences.changed</string>
 		</dict>
@@ -24,7 +24,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string></string>
+			<string>Brightness Slider</string>
 		</dict>
 		<dict>
             <key>PostNotification</key>
@@ -36,12 +36,20 @@
             <key>height</key>
             <string>60</string>
             <key>id</key>
-            <string>addButtonColor</string>
+            <string>brightnessColor</string>
             <key>key</key>
-            <string>addButtonColor</string>
+            <string>brightnessColor</string>
             <key>label</key>
-            <string>Add Button Color</string>
+            <string>Brightness Icon Color</string>
+            <key>fallbackColor</key>
+            <string>#F5CF28</string>
         </dict>
+        <dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Volume Slider</string>
+		</dict>
 		<dict>
             <key>PostNotification</key>
             <string>com.cureux.cc26/preferences.changed</string>
@@ -52,14 +60,16 @@
             <key>height</key>
             <string>60</string>
             <key>id</key>
-            <string>powerButtonColor</string>
+            <string>volumeColor</string>
             <key>key</key>
-            <string>powerButtonColor</string>
+            <string>volumeColor</string>
             <key>label</key>
-            <string>Power Button Color</string>
+            <string>Volume Icon Color</string>
+            <key>fallbackColor</key>
+            <string>#59ABE0</string>
         </dict>
 	</array>
 	<key>title</key>
-	<string>Top Buttons</string>
+	<string>Sliders</string>
 </dict>
 </plist>

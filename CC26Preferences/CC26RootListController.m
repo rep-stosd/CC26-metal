@@ -100,13 +100,7 @@
 }
 @end
 
-@implementation CC26ButtonsListController
-- (NSArray *)specifiers {
-	if (!_specifiers) {
-		_specifiers = [self loadSpecifiersFromPlistName:@"Buttons" target:self];
-	}
-	return _specifiers;
-}
+@implementation CC26Controller
 - (instancetype)init {
 	self = [super init];
 	if (self) {
@@ -126,6 +120,74 @@
 	[[UIApplication sharedApplication] keyWindow].tintColor = TINT_COLOR;
 	[self.navigationController.navigationItem.navigationBar sizeToFit];
 	_table.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+}
+@end
+
+@implementation CC26ButtonsListController
+- (NSArray *)specifiers {
+	if (!_specifiers) {
+		_specifiers = [self loadSpecifiersFromPlistName:@"Buttons" target:self];
+	}
+	return _specifiers;
+}
+- (instancetype)init {
+	self = [super init];
+	if (self) {
+		self.navigationController.navigationBar.prefersLargeTitles = YES;
+		self.navigationItem.largeTitleDisplayMode = UINavigationItemLargeTitleDisplayModeAlways;
+	}
+	return self;
+}
+
+@end
+
+@implementation CC26ModulesListController
+- (NSArray *)specifiers {
+	if (!_specifiers) {
+		_specifiers = [self loadSpecifiersFromPlistName:@"Modules" target:self];
+	}
+	return _specifiers;
+}
+@end
+
+@implementation CC26SlidersListController
+- (NSArray *)specifiers {
+	if (!_specifiers) {
+		_specifiers = [self loadSpecifiersFromPlistName:@"Sliders" target:self];
+	}
+	return _specifiers;
+}
+@end
+
+@implementation CC26BlurListController
+- (NSArray *)specifiers {
+	if (!_specifiers) {
+		_specifiers = [self loadSpecifiersFromPlistName:@"Blur" target:self];
+	}
+	return _specifiers;
+}
+@end
+
+@implementation CC26SwitchCell
+- (instancetype)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
+    self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:reuseIdentifier specifier:specifier];
+    if (self) {
+		[((UISwitch *)[self control]) setOnTintColor:TINT_COLOR];
+        self.detailTextLabel.text = specifier.properties[@"subtitle"] ?: @"";
+		self.detailTextLabel.numberOfLines = [specifier.properties[@"subtitleLines"] intValue] ?: 2;
+    }
+    return self;
+}
+- (void)tintColorDidChange {
+	[super tintColorDidChange];
+	self.detailTextLabel.textColor = [UIColor secondaryLabelColor];
+}
+- (void)refreshCellContentsWithSpecifier:(PSSpecifier *)specifier {
+	[super refreshCellContentsWithSpecifier:specifier];
+
+	if ([self respondsToSelector:@selector(tintColor)]) {
+		self.detailTextLabel.textColor = [UIColor secondaryLabelColor];
+	}
 }
 @end
 
@@ -166,7 +228,7 @@
 }
 - (UIColor *)selectedColor {
 	NSDictionary *colorDict = [[NSUserDefaults standardUserDefaults] objectForKey:[self.specifier.properties[@"key"] stringByAppendingString:@"Dict"] inDomain:domain];
-	return colorDict ? [UIColor colorWithRed:[colorDict[@"red"] floatValue] green:[colorDict[@"green"] floatValue] blue:[colorDict[@"blue"] floatValue] alpha:1.0] : [UIColor secondaryLabelColor];
+	return colorDict ? [UIColor colorWithRed:[colorDict[@"red"] floatValue] green:[colorDict[@"green"] floatValue] blue:[colorDict[@"blue"] floatValue] alpha:1.0] : colorFromHexString(self.specifier.properties[@"fallbackColor"]);
 }
 - (void)colorPickerViewControllerDidSelectColor:(UIColorPickerViewController *)viewController {
 	[[NSUserDefaults standardUserDefaults] setObject:[self dictionaryForColor:viewController.selectedColor] forKey:[self.specifier.properties[@"key"] stringByAppendingString:@"Dict"] inDomain:domain];
