@@ -1,4 +1,5 @@
 #import <UIKit/UIKit.h>
+#import <Metal/Metal.h>
 #import "Headers/NSTask.h"
 #import <objc/runtime.h>
 #import <objc/message.h>

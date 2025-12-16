@@ -1,7 +1,7 @@
 # Set default values (can be overridden by environment)
-DEBUG = 0
+DEBUG = 1
 FINALPACKAGE = 1
-ARCHS = arm64 arm64e
+ARCHS = arm64e
 TARGET := iphone:clang:latest:14.0
 INSTALL_TARGET_PROCESSES = SpringBoard Preferences
 
@@ -15,7 +15,7 @@ else ifeq ($(ROOTHIDE),1)
 	THEOS_PACKAGE_SCHEME = roothide
 	EXPORT_PACKAGE = $(THEOS_PACKAGE_DIR)/$(TWEAK_NAME)_roothide.deb
 else
-	THEOS_DEVICE_IP = 192.168.178.34
+	THEOS_DEVICE_IP = 192.168.1.110
 	THEOS_DEVICE_PORT = 22
 	THEOS_DEVICE_USER = root
 	EXPORT_PACKAGE = $(THEOS_PACKAGE_DIR)/$(TWEAK_NAME)_rootful.deb
@@ -27,7 +27,7 @@ include $(THEOS)/makefiles/common.mk
 # Tweak configuration
 TWEAK_NAME = CC26
 $(TWEAK_NAME)_FILES = Tweak.xm
-$(TWEAK_NAME)_CFLAGS = -fobjc-arc
+$(TWEAK_NAME)_CFLAGS = -fobjc-arc -g -Wno-error
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
